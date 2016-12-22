@@ -1,0 +1,51 @@
+---
+title: "DATA 604 Hmwk 7"
+author: "Dan Fanelli"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#  DES Textbook Problems: 
+
+## 9.14
+
+```{r warning=FALSE}
+accident_distances <- c(88.3, 40.7, 36.3, 27.3, 36.8, 91.7, 67.3, 7.0, 45.2, 23.3, 98.8, 90.1, 17.2, 23.7, 97.4, 32.4, 87.8, 69.8, 62.6, 99.7, 20.6, 73.1, 21.6, 6.0, 45.3, 76.6, 73.2, 27.3, 87.6, 87.2)
+
+length(accident_distances)
+
+hist(accident_distances)
+
+ks.test(accident_distances, runif(length(accident_distances)), min=min(accident_distances), max=max(accident_distances))
+```
+
+## 9.17
+
+```{r warning=FALSE}
+empl_mins <- c(1.88,0.54,1.9,0.15,0.02,2.81,1.5,0.53,2.62,2.67,3.53,0.53,1.8,0.79,0.21,0.8,0.26,0.63,0.36,2.03,1.42,1.28,0.82,2.16,0.05,0.04,1.49,0.66,2.03,1.00,0.39,0.34,0.01,0.1,1.1,0.24,0.26,0.45,0.17,4.29,0.8,5.5,4.91,0.35,0.36,0.9,1.03,1.73,0.38,0.48)
+
+length(empl_mins)
+
+library(MASS)
+
+chisq.test(empl_mins)
+```
+
+## 10.1
+
+```{r warning=FALSE}
+mean_num_jobs_in_shop_on_a_day <- 22.5
+seven_30_day_means <- c(18.9,22.0,19.4,22.1,19.8,21.9,20.2)
+hist(seven_30_day_means)
+t.test(seven_30_day_means, mu = mean(mean_num_jobs_in_shop_on_a_day))
+```
+
+It does not seem likely that this was due to chance.
+
+## 11.13 (Use Simio to build the simulation model)
+
+```{r warning=FALSE}
+
+```
+

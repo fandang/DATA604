@@ -1,0 +1,14 @@
+---
+title: "604 HW 2"
+author: "Dan Fanelli"
+date: "9/25/2016"
+output: html_document
+---
+
+
+```{r}
+exp(1)
+exp(2)
+2.718282 * 2.718282
+```
+

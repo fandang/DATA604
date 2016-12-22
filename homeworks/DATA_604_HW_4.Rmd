@@ -1,0 +1,155 @@
+---
+title: "DATA 604 HW 4"
+author: "Dan Fanelli"
+date: "10/23/2016"
+output: pdf_document
+---
+
+```{r}
+library(ggplot2)
+library(knitr)
+
+# x is a D-dimensional random variable (i.e., a Dx1 column vector) and each component of x is uniformly distributed between -5 and 5
+cost_func <- function(x,D=1){
+  denominator <- ((2*pi)^(D/2))
+  return ((1/denominator)*(exp(1)^(-0.5)*(t(x) %*% x)))
+}
+
+truExp <- function(D=1){
+  return ((1/10)^D)
+}
+
+truExp()
+```
+
+# 1a - Crude Monte Carlo
+
+```{r}
+go_1a <- function(D=1){
+  N <- 1000 * c(1:10)
+  means <- c()
+  sd_vals <- c()
+  covs <- c()
+  
+  for(n in seq(1000,10000,1000)){
+    estimates <- c()
+    for(k in 1:100){
+      estimates <- c(estimates, cost_func(runif(1000, min = -5, max = 5)))
+    }
+    #print(estimates)
+    means <- c(means, mean(estimates))
+    sd_vals <- c(sd_vals, sd(estimates))
+    covs <- c(covs, (sd(estimates) / mean(estimates)))
+  }
+  results <- data.frame(N,means,sd_vals,covs)
+  print(results)
+
+  print(ggplot(data=results, aes(x=N, y=means)) + geom_line() + geom_point())
+  print(ggplot(data=results, aes(x=N, y=sd_vals)) + geom_line() + geom_point())
+  print(ggplot(data=results, aes(x=N, y=covs)) + geom_line() + geom_point())
+}
+
+go_1a()
+
+```
+
+# 1b - Quasi Random Numbers
+
+```{r}
+library(qrng)
+
+x1 <- runif(100,0,10)
+y1 <- runif(100,0,10)
+
+plot(x1, y1)
+
+sobols_x <- sobol(n=100, d=1, randomize = TRUE)
+sobols_y <- sobol(n=100, d=1, randomize = TRUE)
+
+plot(sobols_x, sobols_y)
+```
+
+# 1c - Antithetic Variates
+
+```{r}
+go_1c <- function(D=1){
+  N <- 1000 * c(1:10)
+  means <- c()
+  sd_vals <- c()
+  covs <- c()
+  
+  for(n in seq(1000,10000,1000)){
+    estimates <- c()
+    for(k in 1:100){
+      positives <- cost_func(runif(1000, min = -5, max = 5))
+      negatives <- positives * (-1)
+      #estimates <- c(estimates, positives, positives * (-1))
+      estimates <- c(estimates, negatives)
+    }
+    #print(estimates)
+    means <- c(means, mean(estimates))
+    sd_vals <- c(sd_vals, sd(estimates))
+    covs <- c(covs, (sd(estimates) / mean(estimates)))
+  }
+  results <- data.frame(N,means,sd_vals,covs)
+  print(results)
+
+  print(ggplot(data=results, aes(x=N, y=means)) + geom_line() + geom_point())
+  print(ggplot(data=results, aes(x=N, y=sd_vals)) + geom_line() + geom_point())
+  print(ggplot(data=results, aes(x=N, y=covs)) + geom_line() + geom_point())
+}
+
+go_1c()
+
+```
+
+
+# 1d - Latin Hypercube Sampling
+
+```{r}
+library(lhs)
+go_1d <- function(D=1){
+  N <- 1000 * c(1:10)
+  means <- c()
+  sd_vals <- c()
+  covs <- c()
+  
+  for(n in seq(1000,10000,1000)){
+    estimates <- c()
+    for(k in 1:100){
+      estimates <- randomLHS(1000, 1)
+      #estimates <- c(estimates, cost_func(runif(1000, min = -5, max = 5)))
+    }
+    #print(estimates)
+    means <- c(means, mean(estimates))
+    sd_vals <- c(sd_vals, sd(estimates))
+    covs <- c(covs, (sd(estimates) / mean(estimates)))
+  }
+  results <- data.frame(N,means,sd_vals,covs)
+  print(results)
+
+  print(ggplot(data=results, aes(x=N, y=means)) + geom_line() + geom_point())
+  print(ggplot(data=results, aes(x=N, y=sd_vals)) + geom_line() + geom_point())
+  print(ggplot(data=results, aes(x=N, y=covs)) + geom_line() + geom_point())
+}
+
+go_1d()
+```
+
+
+# 1e - Importance Sampling
+
+```{r}
+```
+
+# 1f - Summary
+
+```{r}
+```
+
+
+## All Code:
+
+```{r code=readLines(knitr::purl('DATA_604_HW_4.Rmd', documentation = 0)), eval = FALSE}
+
+```

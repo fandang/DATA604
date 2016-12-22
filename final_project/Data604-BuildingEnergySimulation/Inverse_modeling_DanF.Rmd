@@ -1,0 +1,66 @@
+---
+title: "Inverse Modeling"
+author: "Dan Fanelli"
+date: "December 2, 2016"
+output: html_document
+---
+
+# PRE:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+load("report_dataframe.Rda")
+head(df)
+```
+
+# SUBMISSION:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(FME)
+library(mltools)
+library(data.table)
+
+#######################################
+# First get the 2 CDF funcs:
+#######################################
+par(mfrow=c(1,2))
+the_pcts <- seq(0, 1, 0.01)
+
+# http://stats.stackexchange.com/questions/30858/how-to-calculate-cumulative-distribution-in-r
+
+cdf_elec = ecdf(df$Elec) # function giving the empirical CDF
+cdf_elec(0.0)
+
+cdf_fuel = ecdf(df$Fuel) # function giving the empirical CDF
+cdf_fuel(0.0)
+
+
+
+plot(cdf_elec, main="Regular CDF Electricity", xlab = "Elec", ylab = "Pct") 
+plot(cdf_fuel, main="Regular CDF Fuel", xlab = "Fuel", ylab = "Pct") 
+
+
+#######################################
+# next the inverse cdfs using quantiles
+#######################################
+
+# https://stat.ethz.ch/pipermail/r-help/2008-September/175046.html
+
+inv_cdf_elec <- function(pct){
+  qntl <- quantile(cdf_elec, probs = the_pcts)
+  return (qntl)
+}
+  
+inv_cdf_fuel <- function(pct){
+  qntl <- quantile(cdf_fuel, probs = the_pcts)
+  return (qntl)
+}
+  
+  
+#kable(head(invs_df))
+#kable(tail(invs_df))
+
+plot(inv_cdf_elec, main="Inverse CDF Electricity", xlab = "Pct", ylab = "Elec")
+plot(inv_cdf_fuel, main="Inverse CDF Fuel", xlab = "Pct", ylab = "Fuel")
+
+```
+

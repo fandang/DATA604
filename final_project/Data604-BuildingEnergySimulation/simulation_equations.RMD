@@ -1,0 +1,160 @@
+---
+output: pdf_document
+---
+## LIC
+
+```{r}
+
+# Function: CP Model Equation
+
+bldg.sim <- function(oa.temp, setpoint, u.value, air.chg) {
+
+  # Assumptions
+  baseload <- 25200
+  #u.value <- 1.5  # watts per sq. meter/K building envelope conductance  SI
+  area <- 7500  # sq. meter envelope area  SI
+  volume <- 37800  # cubic meter volume (conditioned space) (assumption) SI
+  #air.chg <- 1  # air change per hr.
+  rho <- 1.2  # kg/m cubed density of air  SI
+  cp <- 0.27  # watt hrs./cubic meter in K specific heat of air  SI
+  cool.slope <- 2695  # cooling slope (from lm)
+  cool.cp <- 62.76  # cooling CP (from CP model)
+  #setpoint <- 76  # cooling setpoint (assumption)
+  #oa.temp
+  
+  # Cooling Coefficient
+  cool.coef <- ((((u.value * area) + (volume * air.chg * rho * cp)) / 1000) * 0.556) * (30*24) 
+  # convert from watts to kw, = kwh per F (multiply by 0.556)
+
+  # Cooling Efficiency
+  cool.eff <- cool.coef / cool.slope
+  
+  # Internal Loads
+  i.loads <- -cool.coef * (cool.cp - setpoint)
+  
+  # Total Electricity
+  total.e <- ifelse(oa.temp - cool.cp > 0,
+    baseload + (cool.slope * (oa.temp - cool.cp)),
+    baseload) # E = expected kWh at Toa - CP MODEL EQUATION
+
+  # Parameters
+  parameters <- c(u.value, area, volume, air.chg, rho, cp, cool.slope, cool.cp, 
+                  cool.eff, setpoint, baseload, oa.temp, total.e, i.loads)
+  # as.data.frame(parameters)
+  names(parameters) <- c('u-value', 'surface area', 'volume', 'air changes', 'density of air', 
+                         'specific heat of air', 'cooling slope', 'cooling change-point', 
+                         'cooling efficiency', 'setpoint', 'baseload', 'outdoor air temp.', 
+                         'total electricity', 'internal loads')
+  
+  return(cbind(total.e, cool.coef, cool.eff, i.loads))
+  # Return
+  #return(
+  #cat("Expected kWh at Toa:", total.e, 
+      #"\nCooling Coefficient:", cool.coef, 
+      #"\nCooling Efficiency:", cool.eff,
+      #"\nInternal Loads:", i.loads, 
+      #"\nParameters\n", 
+      #parameters
+      
+      #))
+}
+
+bldg.sim(50, 76, 1.5, 1)
+
+```
+## Simulation 
+### Assumptions made for model can be simulated
+### Sim #1: Toa -- use CP Model Equation and simulate Toa from 10-100 degrees F in steps of 5 degrees
+
+
+The first simulation using the building changepoint model uses a temperature range from 10 to 100 deg. F by 5 degree incrememnts. All other parameters are kept constant (thermostat setpoint: 76 deg. F, u value: 1.5, air exchange: 1). 
+
+
+```{r}
+library(devtools)
+scipen=9999
+
+sim.temps <- seq(from = 10, to = 100, by = 5)
+
+temp.range.results <- lapply(sim.temps, FUN = bldg.sim,  setpoint = 76, u.value = 1.5, air.chg = 1)
+
+temp.range.results <- as.data.frame(do.call(rbind, temp.range.results))
+temp.range.results <- cbind(sim.temps, temp.range.results)
+print(temp.range.results)
+
+```
+
+
+```{r}
+summary(temp.range.results)
+```
+
+
+### Sim #2: Tset -- substitute other values from 50 to 75, in steps of 5 degrees -- this simulates setting the thermostat lower or higher
+
+The second simulation using the building changepoint model uses a thermostat temperature set range from 50 to 75 deg. F by 5 degree incrememnts. All other parameters are kept constant (temperature: 76 deg. F, u value: 1.5, air exchange: 1). 
+
+```{r}
+library(devtools)
+scipen=9999
+
+sim.Tset <- seq(from = 50, to = 75, by = 5)
+
+Tset.range.results <- lapply(sim.Tset, FUN = bldg.sim, oa.temp = 76, u.value = 1.5, air.chg = 1)
+
+Tset.range.results <- as.data.frame(do.call(rbind, Tset.range.results))
+Tset.range.results <- cbind(sim.Tset, Tset.range.results)
+print(Tset.range.results)
+
+```
+
+
+```{r}
+summary(Tset.range.results)
+```
+
+
+### Sim #3: U -- substitute other values: 0.25, 0.18, 0.12, 0.09 -- this simulates adding insulation, etc. to tighten building envelope
+
+The third simulation using the building changepoint model uses building insulation coefficient range from 0.09 to 0.25 by 0.1 degree incrememnts. All other parameters are kept constant (temperature: 76 deg. F, thermostat setpoint: 76 deg. F, air exchange: 1). 
+
+```{r}
+
+sim.insulation <- seq(from = 0.6, to = 2, by = 0.2)
+
+insulation.range.results <- lapply(sim.insulation, FUN = bldg.sim, oa.temp = 76, setpoint = 76, air.chg = 1)
+
+insulation.range.results <- as.data.frame(do.call(rbind, insulation.range.results))
+insulation.range.results <- cbind(sim.insulation, insulation.range.results)
+print(insulation.range.results)
+
+```
+
+
+```{r}
+summary(insulation.range.results)
+```
+
+
+### Sim #4: V -- substitute other values: 1 to 3, in steps of 0.5 -- this simulates improved/worse ventilation/infiltration flow rate (lower is)
+
+
+The fourth simulation using the building changepoint model uses building ventilation / infiltration flow rate range from 0.09 to 0.25 by 0.1 degree incrememnts. All other parameters are kept constant (temperature: 76 deg. F, thermostat setpoint: 76 deg. F, u value: 1.5). 
+
+
+```{r}
+
+sim.V <- seq(from = 1, to = 3, by = 0.5)
+
+V.range.results <- lapply(sim.V, FUN = bldg.sim,  oa.temp = 76, setpoint = 76, u.value = 1.5)
+
+V.range.results <- as.data.frame(do.call(rbind, V.range.results))
+V.range.results <- cbind(sim.V, V.range.results)
+print(V.range.results)
+
+```
+
+
+```{r}
+summary(V.range.results)
+```

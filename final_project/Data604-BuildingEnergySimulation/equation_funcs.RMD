@@ -1,0 +1,184 @@
+
+```{r}
+
+# Function: CP Model Equation
+get.E <- function(baseload, cooling.slope, oa.temp, cooling.cp) {
+  total.elec <- baseload + (cooling.slope * (oa.temp - cooling.cp)) 
+  return(total.elec)
+}
+get.E(100, .35, 80, 65)
+
+# Function: Cooling Coefficient
+get.CC <- function(u.value, area, vent.rate) {
+  air.density <- 1.196  # density of air (calc. based on IAT 72F)
+  air.heat <- 1.047  # specific heat of air (calc. based on IAT 72F)
+  cooling.coef <- (u.value * area) + (vent.rate * air.density * air.heat)
+  return(cooling.coef)
+}
+get.CC(.31, 50000, 1.5)
+
+# Function: Efficency
+get.Effc <- function(cooling.coef, cooling.slope) {
+  c.Eff <- cooling.coef / cooling.slope
+  return(c.Eff)
+}
+get.Effc(150001.81, .35)
+
+# Function: Internal Loads (Qi)
+get.iLoads <- function(cooling.coef, cooling.cp, t.setpoint){
+  iLoad <- -cooling.coef * (cooling.cp - t.setpoint)
+  return(iLoad)
+}
+get.iLoads(15001.18, 52, 65)
+```
+
+
+```{r}
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(forcats)
+
+
+weather <- read.csv("data/noaa.csv") %>% select(DATE, TAVG) %>% filter(TAVG < 100) %>% filter(TAVG > 20)
+weather$DATE <- ymd(weather$DATE)
+
+#  Get months
+weather$Month <- months(weather$DATE)
+
+#  Get years
+weather$Year <- format(weather$DATE,format="%y")
+
+#  Aggregate 'X2' on months and year and get mean
+month.ave <- aggregate(TAVG ~ Month + Year, weather, mean)
+```
+
+```{r}
+generate.random.year <- function(months){
+  random.year <- rbind(
+    months %>% filter(Month == "January") %>% sample_n(1),
+    months %>% filter(Month == "February") %>% sample_n(1),
+    months %>% filter(Month == "March") %>% sample_n(1),
+    months %>% filter(Month == "April") %>% sample_n(1),
+    months %>% filter(Month == "May") %>% sample_n(1),
+    months %>% filter(Month == "June") %>% sample_n(1),
+    months %>% filter(Month == "July") %>% sample_n(1),
+    months %>% filter(Month == "August") %>% sample_n(1),
+    months %>% filter(Month == "September") %>% sample_n(1),
+    months %>% filter(Month == "October") %>% sample_n(1),
+    months %>% filter(Month == "November") %>% sample_n(1),
+    months %>% filter(Month == "December") %>% sample_n(1))
+  
+  return(random.year)
+
+}
+
+rand.yr <- generate.random.year(month.ave)
+```
+
+```{r}
+library(ggplot2)
+
+E <- NULL
+
+for(i in 1:12) {
+  E.mo <- get.E(100, .35, rand.yr[i,3], 65)
+  E <- c(E, E.mo)
+  
+}
+
+record <- cbind(rand.yr, E)
+record$Month <- c(1,2,3,4,5,6,7,8,9,10,11,12)
+
+ggplot(record, aes(x = Month, y = E)) + geom_point() + geom_line() + theme_bw()
+```
+
+```{r}
+hist.month.list <- c("January", "February", "March", "April", "May",
+                     "June", "July", "August", "September", "October",
+                     "November", "December") %>% 
+  as.factor() %>%
+  fct_inorder()
+  
+
+hist.month.ave <- NULL
+hist.month.sd <- NULL
+
+
+for (i in 1:length(hist.month.list)) {
+  hist.month.record <- month.ave %>% 
+    filter(Month == hist.month.list[i]) %>%
+    select(TAVG)
+  
+  hist.month.ave <- c(hist.month.ave, mean(hist.month.record$TAVG))
+  hist.month.sd <- c(hist.month.sd, sd(hist.month.record$TAVG))
+}
+
+hist.month.record <- cbind.data.frame(hist.month.ave, hist.month.sd, hist.month.list) %>%
+  rename(Month = hist.month.list, Temp_Mean = hist.month.ave, Temp_SD = hist.month.sd)
+
+hist.month.record$Temp_Mean <- as.numeric(hist.month.record$Temp_Mean)
+hist.month.record$Temp_SD <- as.numeric(hist.month.record$Temp_SD)
+
+```
+
+Monthly averages with standard deviation
+```{r}
+error.bars <- aes(ymax = Temp_Mean + Temp_SD, ymin = Temp_Mean - Temp_SD)
+
+ggplot(data = hist.month.record, aes(x = Month, y = Temp_Mean)) + geom_bar(stat = "identity") + geom_errorbar(error.bars) + theme_bw()
+```
+
+1K Simulated years
+
+```{r}
+sim.year <- function(){
+  
+  sim.year <- NULL
+  
+  for (i in 1:12) {
+    sample.params <- hist.month.record %>%
+      filter(Month == hist.month.list[i])
+    
+    month.sim <- rnorm(1, 
+                       mean = sample.params$Temp_Mean, 
+                       sd = sample.params$Temp_SD)
+    
+    month.sim <- cbind.data.frame(sample.params$Month, month.sim)
+    
+    sim.year <- rbind.data.frame(sim.year, month.sim)
+    
+  }
+  return(sim.year)
+}
+```
+
+```{r}
+cal.yearly.energy <- function() {
+  
+  rand.yr <- sim.year()
+  E <- NULL
+  
+  for(i in 1:12) {
+    E.mo <- get.E(100, .35, rand.yr[i,2], 65)
+    E <- c(E, E.mo)
+  }
+  
+  E %>% 
+    sum() %>% 
+    return()
+}
+```
+
+```{r}
+n = 1000
+
+yearly.energy.use.sims <- replicate(n, cal.yearly.energy())
+```
+
+```{r}
+summary(yearly.energy.use.sims)
+
+hist(yearly.energy.use.sims)
+```
+

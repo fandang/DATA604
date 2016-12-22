@@ -1,0 +1,27 @@
+## LIC
+```{r}
+
+# 3PC Model - Simuation: Temperature
+
+Ei <- 0.01399697  # baseload (non-weather sensitive usage)
+CS <- 0.0011583  # cooling slope (from lm)
+TcpC <- 53.48  # cooling CP (from CP model)
+
+tot.e <- list()
+reps <- 100
+
+for(i in 1:reps) {
+  temp <- round(runif(1, 0, 100), 2)
+  temp.n <- ifelse(temp < TcpC, 0, (temp - TcpC))
+  tot.e <- rbind(tot.e, (Ei + (CS * (temp.n))))
+  df.temp <- rbind(df.temp(temp.n))
+}
+
+df.e <- cbind(data.frame(temp.n, tot.e))
+names(df.e) <- c('Temp', 'Total Energy')
+
+# cat("Expected kWh at Toa:", E)
+
+print(df.e)
+
+```

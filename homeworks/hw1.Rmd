@@ -1,0 +1,13 @@
+---
+title: "604 hw1"
+author: "Dan Fanelli"
+date: "September 9, 2016"
+output: html_document
+---
+
+### problem 2:
+
+```{r}
+summary(cars)
+```
+
